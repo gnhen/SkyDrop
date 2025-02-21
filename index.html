@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyDrop</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="src/SkyDropICON.png">
+    <script src="scripts.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <img src="src/SkyDropCentered.png" alt="SkyDrop Logo" class="logo">
+        <h1>SkyDrop</h1>
+        <div class="buttons">
+            <button onclick="showText()">Show Recently Received Text</button>
+            <button onclick="showFiles()">Show Recently Received Files</button>
+        </div>
+        <div id="content"></div>
+    </div>
+
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <img id="popup-image" src="" alt="Image preview">
+            <div class="popup-buttons">
+                <a id="download-btn" href="#" download>Download</a>
+                <button onclick="closePopup()">Close Popup</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
