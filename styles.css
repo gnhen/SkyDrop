@@ -180,3 +180,9 @@ li button:hover {
     margin: 0 auto 20px auto;
     max-width: 100px;
 }
+
+.copyright {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #667;
+}
