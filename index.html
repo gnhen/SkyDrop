@@ -12,7 +12,10 @@
 
 <body>
     <div class="container">
-        <img src="src/SkyDropCentered.png" alt="SkyDrop Logo" class="logo">
+        <img id="skydrop-logo" src="src/SkyDropCentered.png" alt="SkyDrop Logo" height="150">
+        <form id="upload-form" enctype="multipart/form-data" style="display: none;">
+            <input type="file" id="file-input" name="file" accept="image/*, .txt, .pdf">
+        </form>
         <h1>SkyDrop</h1>
         <div class="buttons">
             <button onclick="showText()">Show Recently Received Text</button>

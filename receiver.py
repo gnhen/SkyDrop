@@ -4,6 +4,7 @@ import mimetypes
 
 app = Flask(__name__)
 
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB limit
 SAVE_DIR = "received_files"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -78,6 +79,34 @@ def rename_file():
 
     os.rename(old_path, new_path)
     return "File renamed", 200
+
+
+# Upload File
+@app.route("/upload_file", methods=["POST"])
+def upload_file():
+    if "file" not in request.files:
+        return "No file part", 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return "No selected file", 400
+
+    file_path = os.path.join(SAVE_DIR, file.filename)
+    file.save(file_path)
+    print("File uploaded:", file.filename)
+
+    # Keep only the 10 most recent files
+    files = [
+        {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
+        for f in os.listdir(SAVE_DIR)
+        if f != "received_text.txt"
+    ]
+    files.sort(key=lambda x: x["mtime"], reverse=True)
+    if len(files) > 10:
+        for file in files[10:]:
+            os.remove(os.path.join(SAVE_DIR, file["name"]))
+
+    return "File uploaded", 200
 
 
 # Receive Text or Files

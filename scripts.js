@@ -88,3 +88,31 @@ function openImagePopup(imageSrc) {
 function closePopup() {
     document.getElementById('popup').style.display = 'none';
 }
+
+document.getElementById('skydrop-logo').addEventListener('click', function () {
+    document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', function () {
+    uploadFile();
+});
+
+// Upload File
+function uploadFile() {
+    const fileInput = document.getElementById('file-input');
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    fetch('/upload_file', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => {
+            if (response.ok) {
+                alert("File uploaded successfully");
+                showFiles();
+            } else {
+                alert("Failed to upload file");
+            }
+        });
+}
