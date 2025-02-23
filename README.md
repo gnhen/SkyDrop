@@ -12,6 +12,12 @@ The code is designed to only hold the most recent TEN items for both files and t
 
 SkyDrop is best used with the iOS Shortcut, which you can find below.
 
+# ❗ Watch the Demo video on Youtube
+<a href="https://www.youtube.com/watch?v=SV0vZcAXVro">
+  <img src="src/skydropVid.png" width="560" height="315" />
+</a>
+
+
 # Usage
 
 ## Setting Up the Server
