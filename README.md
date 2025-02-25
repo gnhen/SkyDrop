@@ -41,7 +41,7 @@ key_for_flask_login
 Done! Now, we can move onto the iOS Shortcut
 
 ## Setting up the iOS Shortcut
-1. [Download the Shortcut to your iPhone](https://www.icloud.com/shortcuts/7adb6704dd974610b1981e589d269bb9)
+1. [Download the Shortcut to your iPhone](https://www.icloud.com/shortcuts/beb1a4544f67442f98d4582a6d78f0bd)
 2. Open the shortcut and edit the **text** option near the top to attatch to your URL. Something like **http://```192.168.1.1:5000```/receive** for example
 3. Add it to your Share Sheet
 4. Add it to your home screen
