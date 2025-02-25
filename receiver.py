@@ -230,14 +230,21 @@ def receive_file():
             print(f"Processing text: {content}")
             text_path = os.path.join(SAVE_DIR, "received_text.txt")
 
+            # Read existing lines or create empty list
+            lines = []
             if os.path.exists(text_path):
                 with open(text_path, "r") as f:
-                    existing_content = f.read()
-                with open(text_path, "w") as f:
-                    f.write(content + "\n" + existing_content)
-            else:
-                with open(text_path, "w") as f:
-                    f.write(content + "\n")
+                    lines = f.readlines()
+
+            # Add new content as first line
+            lines.insert(0, content + "\n")
+
+            # Keep only 10 most recent lines
+            lines = lines[:10]
+
+            # Write back to file
+            with open(text_path, "w") as f:
+                f.writelines(lines)
 
             return "Text received", 200
 
