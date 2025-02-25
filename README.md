@@ -4,7 +4,7 @@
 
 # What is this?
 
-SkyDrop is an open source, lightweight, cross platform AirDrop Flask server.
+SkyDrop is an open source, lightweight, cross platform AirDrop server.
 
 It takes a URL request, gathers the contents, and hosts it on the index page for easy copying and sharing.
 
@@ -30,8 +30,13 @@ To set up the server, you need a computer that is always running on the same IP 
    2.  Use a CloudFlare Tunnel to securely pipe your localhost to a URL
 2. Install Python & pip
 3. Use pip to install Flask
-4. Open a terminal and run ```python receiver.py```
-5. Leave the terminal running, this is your server, and should remain active at all times
+4. Create ```key.txt```, and use the following format for your login details. Replace ```key_for_flask_login``` with any string, an example being ```394848329292983848939392929383483```
+```
+login:password
+key_for_flask_login
+```
+5. Open a terminal and run ```python receiver.py```
+6. Leave the terminal running, this is your server, and should remain active at all times
 
 Done! Now, we can move onto the iOS Shortcut
 
@@ -48,7 +53,7 @@ Done! You should now be all set up and ready to airdrop!
 2. Move the Share Sheet option to the top by clicking ```Edit Actions...``` on the bottom of your share sheet
 
 # ⚠️ Important ⚠️
-### Keep your URL ```PRIVATE```
+### Keep your login & password ```PRIVATE```
 
 # No iPhone?
 
