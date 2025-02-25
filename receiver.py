@@ -1,48 +1,105 @@
-from flask import Flask, request, send_from_directory, jsonify
+from flask import (
+    Flask,
+    request,
+    send_from_directory,
+    jsonify,
+    redirect,
+    url_for,
+    render_template,
+)
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    login_required,
+    logout_user,
+    current_user,
+)
 import os
 import mimetypes
 
 app = Flask(__name__)
 
+# Read the secret key and credentials from key.txt
+with open("key.txt", "r") as f:
+    lines = f.read().strip().split("\n")
+    app.secret_key = lines[1]
+    credentials = lines[0].split(":")
+    USERNAME = credentials[0]
+    PASSWORD = credentials[1]
+
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB limit
 SAVE_DIR = "received_files"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
-# Serve Static Files
+
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        if username == USERNAME and password == PASSWORD:
+            user = User(username)
+            login_user(user)
+            return redirect(url_for("index"))
+        return "Invalid credentials"
+    return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
 @app.route("/")
+@login_required
 def index():
     return send_from_directory(".", "index.html")
 
 
-@app.route("/styles.css")
-def styles():
-    return send_from_directory(".", "styles.css")
-
-
-@app.route("/scripts.js")
-def scripts():
-    return send_from_directory(".", "scripts.js")
+@app.route("/static/<path:filename>")
+def static_files(filename):
+    return send_from_directory("static", filename)
 
 
 @app.route("/src/<path:filename>")
+@login_required
 def serve_src(filename):
     return send_from_directory("src", filename)
 
 
 @app.route("/<path:filename>")
+@login_required
 def serve_root(filename):
     return send_from_directory(".", filename)
 
 
 # Download Files
 @app.route("/received_files/<filename>")
+@login_required
 def download_file(filename):
     return send_from_directory(SAVE_DIR, filename)
 
 
 # Get Text
 @app.route("/get_text")
+@login_required
 def get_text():
     text_path = os.path.join(SAVE_DIR, "received_text.txt")
     if os.path.exists(text_path):
@@ -53,6 +110,7 @@ def get_text():
 
 # Get Files List
 @app.route("/get_files")
+@login_required
 def get_files():
     files = [
         {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
@@ -65,6 +123,7 @@ def get_files():
 
 # Rename File
 @app.route("/rename_file", methods=["POST"])
+@login_required
 def rename_file():
     old_name = request.form.get("old_name")
     new_name = request.form.get("new_name")
@@ -83,6 +142,7 @@ def rename_file():
 
 # Upload File
 @app.route("/upload_file", methods=["POST"])
+@login_required
 def upload_file():
     if "file" not in request.files:
         return "No file part", 400
@@ -111,6 +171,7 @@ def upload_file():
 
 # Receive Text or Files
 @app.route("/receive", methods=["POST"])
+@login_required
 def receive_file():
     # Handle Text
     content = request.form.get("text")
