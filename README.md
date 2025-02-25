@@ -1,6 +1,6 @@
 # SkyDrop
 
-<img src="src/SkyDropICON.png" height="200">
+<img src="static/src/SkyDropICON.png" height="200">
 
 # What is this?
 
@@ -14,7 +14,7 @@ SkyDrop is best used with the iOS Shortcut, which you can find below.
 
 # ❗ Watch the Demo video on Youtube
 <a href="https://www.youtube.com/watch?v=SV0vZcAXVro" target="_blank">
-  <img src="src/skydropVid.png" width="560" height="315" />
+  <img src="static/src/skydropVid.png" width="560" height="315" />
 </a>
 
 
