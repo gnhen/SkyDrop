@@ -171,57 +171,81 @@ def upload_file():
 
 # Receive Text or Files
 @app.route("/receive", methods=["POST"])
-@login_required
 def receive_file():
-    # Handle Text
-    content = request.form.get("text")
-    if content:
-        text_path = os.path.join(SAVE_DIR, "received_text.txt")
-        if os.path.exists(text_path):
-            with open(text_path, "r") as f:
-                existing_content = f.read()
-            with open(text_path, "w") as f:
-                f.write(content + "\n" + existing_content)
-        else:
-            with open(text_path, "w") as f:
-                f.write(content + "\n")
-        print("Text saved:", content)
+    username = request.headers.get("Username")
+    password = request.headers.get("Password")
+    filename = request.headers.get("X-File-Name")
+    file_ext = request.headers.get("X-File-Extension", "")
+    content_type = request.content_type
 
-        # Keep only the 10 most recent text entries
-        with open(text_path, "r") as f:
-            lines = f.readlines()
-        if len(lines) > 10:
-            with open(text_path, "w") as f:
-                f.writelines(lines[:10])
+    print("=== Received Request ===")
+    print(f"Content-Type: {content_type}")
+    print(f"Headers: {dict(request.headers)}")
+    print(f"Form Data: {request.form}")
+    print(f"Files: {request.files}")
+    print(f"Data Length: {request.content_length}")
+    print("======================")
 
-    # Handle Files
-    if request.data:
-        # Extract filename from headers
-        filename = request.headers.get("X-File-Name", "received_file")
+    if username != USERNAME or password != PASSWORD:
+        print("Authentication failed")
+        return "Invalid credentials", 401
 
-        # Guess extension if missing
-        if "." not in filename:
-            mime_type = request.headers.get("Content-Type")
-            ext = mimetypes.guess_extension(mime_type) or ""
-            filename += ext
+    try:
+        # Handle file uploads via multipart/form-data
+        if request.files:
+            for key, file in request.files.items():
+                if file.filename:
+                    print(f"Processing multipart file: {file.filename}")
+                    safe_filename = os.path.basename(file.filename)
+                    file_path = os.path.join(SAVE_DIR, safe_filename)
+                    file.save(file_path)
+                    print(f"Saved file to: {file_path}")
+                    return "File received", 200
 
-        file_path = os.path.join(SAVE_DIR, filename)
-        with open(file_path, "wb") as f:
-            f.write(request.data)
-        print("File saved:", filename)
+        # Handle raw file upload
+        if filename and request.content_length > 0:
+            print(f"Processing raw file: {filename}")
+            safe_filename = os.path.basename(filename)
 
-        # Keep only the 10 most recent files
-        files = [
-            {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
-            for f in os.listdir(SAVE_DIR)
-            if f != "received_text.txt"
-        ]
-        files.sort(key=lambda x: x["mtime"], reverse=True)
-        if len(files) > 10:
-            for file in files[10:]:
-                os.remove(os.path.join(SAVE_DIR, file["name"]))
+            # Determine file extension
+            if file_ext:
+                # Use provided extension
+                if not safe_filename.lower().endswith(f".{file_ext.lower()}"):
+                    safe_filename = f"{safe_filename}.{file_ext}"
+            elif content_type and content_type != "application/octet-stream":
+                # Try to get extension from content type
+                ext = mimetypes.guess_extension(content_type)
+                if ext and not safe_filename.lower().endswith(ext.lower()):
+                    safe_filename = f"{safe_filename}{ext}"
 
-    return "Received", 200
+            file_path = os.path.join(SAVE_DIR, safe_filename)
+            with open(file_path, "wb") as f:
+                f.write(request.get_data())
+            print(f"Saved raw file to: {file_path}")
+            return "File received", 200
+
+        # Handle text content
+        if request.form.get("text"):
+            content = request.form.get("text")
+            print(f"Processing text: {content}")
+            text_path = os.path.join(SAVE_DIR, "received_text.txt")
+
+            if os.path.exists(text_path):
+                with open(text_path, "r") as f:
+                    existing_content = f.read()
+                with open(text_path, "w") as f:
+                    f.write(content + "\n" + existing_content)
+            else:
+                with open(text_path, "w") as f:
+                    f.write(content + "\n")
+
+            return "Text received", 200
+
+        return "No content received", 400
+
+    except Exception as e:
+        print(f"Error processing request: {e}")
+        return f"Error: {str(e)}", 500
 
 
 if __name__ == "__main__":
