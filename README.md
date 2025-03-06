@@ -1,6 +1,8 @@
 # SkyDrop
 
-<img src="static/src/SkyDropICON.png" height="200">
+<p align="center">
+   <img src="static/src/SkyDropICON.png" height="200">
+</p>
 
 # What is this?
 
@@ -13,9 +15,11 @@ The code is designed to only hold the most recent TEN items for both files and t
 SkyDrop is best used with the iOS Shortcut, which you can find below.
 
 # ❗ Watch the Demo video on Youtube
+<p align="center">
 <a href="https://www.youtube.com/watch?v=SV0vZcAXVro" target="_blank">
   <img src="static/src/skydropVid.png" width="560" height="315" />
 </a>
+</p>
 
 
 # Usage
