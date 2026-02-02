@@ -415,8 +415,9 @@ def init_db():
 
 
 if __name__ == "__main__":
-    # Initialize database
-    init_db()
+    # Note: Database initialization commented out - not currently used
+    # Uncomment when implementing database-backed file tracking
+    # init_db()
     
     # Get host and port from config or environment
     host = os.getenv('HOST', '0.0.0.0')
