@@ -401,6 +401,15 @@ def ratelimit_handler(e):
 def init_db():
     """Initialize database tables"""
     with app.app_context():
+        # Ensure database directory exists
+        db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+        if db_uri.startswith('sqlite:///'):
+            db_path = db_uri.replace('sqlite:///', '')
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+                logger.info(f"Created database directory: {db_dir}")
+        
         db.create_all()
         logger.info("Database initialized")
 
