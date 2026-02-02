@@ -1,3 +1,7 @@
+"""
+SkyDrop - Cross-platform file and text sharing application
+Modernized with security enhancements and proper architecture
+"""
 from flask import (
     Flask,
     request,
@@ -15,28 +19,74 @@ from flask_login import (
     logout_user,
     current_user,
 )
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_sqlalchemy import SQLAlchemy
 import os
 import mimetypes
+import logging
+from datetime import datetime
+from config import get_config
 
+# Initialize Flask app
 app = Flask(__name__)
 
-# Read the secret key and credentials from key.txt
-with open("key.txt", "r") as f:
-    lines = f.read().strip().split("\n")
-    app.secret_key = lines[1]
-    credentials = lines[0].split(":")
-    USERNAME = credentials[0]
-    PASSWORD = credentials[1]
+# Load configuration
+config_class = get_config()
+app.config.from_object(config_class)
 
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB limit
-SAVE_DIR = "received_files"
+# Initialize extensions
+csrf = CSRFProtect(app)
+db = SQLAlchemy(app)
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    storage_uri=app.config['RATELIMIT_STORAGE_URL']
+)
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Create save directory
+SAVE_DIR = app.config['SAVE_DIR']
 os.makedirs(SAVE_DIR, exist_ok=True)
 
+# Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
 
+# Database Models
+class FileRecord(db.Model):
+    """Track uploaded files in database"""
+    __tablename__ = 'files'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Integer)
+    mime_type = db.Column(db.String(100))
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.filename,
+            'original_name': self.original_filename,
+            'size': self.file_size,
+            'mime_type': self.mime_type,
+            'upload_date': self.upload_date.isoformat(),
+            'mtime': self.upload_date.timestamp()
+        }
+
+
+# User model for authentication
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
@@ -47,22 +97,40 @@ def load_user(user_id):
     return User(user_id)
 
 
+# Authentication helper
+def check_credentials(username, password):
+    """Validate user credentials"""
+    return (username == app.config['ADMIN_USERNAME'] and 
+            password == app.config['ADMIN_PASSWORD'])
+
+
+# Routes
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def login():
+    """User login endpoint with rate limiting"""
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        if username == USERNAME and password == PASSWORD:
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        
+        if check_credentials(username, password):
             user = User(username)
             login_user(user)
-            return redirect(url_for("index"))
-        return "Invalid credentials"
+            logger.info(f"User {username} logged in successfully")
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for("index"))
+        
+        logger.warning(f"Failed login attempt for username: {username}")
+        return render_template("login.html", error="Invalid credentials"), 401
+    
     return render_template("login.html")
 
 
 @app.route("/logout")
 @login_required
 def logout():
+    """User logout endpoint"""
+    logger.info(f"User {current_user.id} logged out")
     logout_user()
     return redirect(url_for("login"))
 
@@ -70,80 +138,116 @@ def logout():
 @app.route("/")
 @login_required
 def index():
+    """Main application page"""
     return send_from_directory(".", "index.html")
 
 
 @app.route("/static/<path:filename>")
 def static_files(filename):
+    """Serve static files"""
     return send_from_directory("static", filename)
 
 
 @app.route("/src/<path:filename>")
 @login_required
 def serve_src(filename):
+    """Serve source files"""
     return send_from_directory("src", filename)
 
 
 @app.route("/<path:filename>")
 @login_required
 def serve_root(filename):
+    """Serve root files"""
     return send_from_directory(".", filename)
 
 
-# Download Files
 @app.route("/received_files/<filename>")
 @login_required
 def download_file(filename):
-    return send_from_directory(SAVE_DIR, filename)
-
-
-# Get Text
-@app.route("/get_text")
-@login_required
-def get_text():
-    text_path = os.path.join(SAVE_DIR, "received_text.txt")
-    if os.path.exists(text_path):
-        with open(text_path, "r") as f:
-            return f.read()
-    return "No text received yet."
-
-
-# Get Files List
-@app.route("/get_files")
-@login_required
-def get_files():
-    files = [
-        {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
-        for f in os.listdir(SAVE_DIR)
-        if f != "received_text.txt"
-    ]
-    files.sort(key=lambda x: x["mtime"], reverse=True)
-    return jsonify(files)
-
-
-# Rename File
-@app.route("/rename_file", methods=["POST"])
-@login_required
-def rename_file():
-    old_name = request.form.get("old_name")
-    new_name = request.form.get("new_name")
-    if not old_name or not new_name:
-        return "Invalid request", 400
-
-    old_path = os.path.join(SAVE_DIR, old_name)
-    new_path = os.path.join(SAVE_DIR, new_name)
-
-    if not os.path.exists(old_path):
+    """Download received files"""
+    try:
+        return send_from_directory(SAVE_DIR, filename)
+    except FileNotFoundError:
+        logger.error(f"File not found: {filename}")
         return "File not found", 404
 
-    os.rename(old_path, new_path)
-    return "File renamed", 200
+
+@app.route("/get_text")
+@login_required
+@limiter.limit("60 per minute")
+def get_text():
+    """Get received text content"""
+    text_path = os.path.join(SAVE_DIR, "received_text.txt")
+    try:
+        if os.path.exists(text_path):
+            with open(text_path, "r", encoding="utf-8") as f:
+                return f.read()
+        return "No text received yet."
+    except Exception as e:
+        logger.error(f"Error reading text file: {e}")
+        return "Error reading text", 500
 
 
-# Upload File
+@app.route("/get_files")
+@login_required
+@limiter.limit("60 per minute")
+def get_files():
+    """Get list of received files"""
+    try:
+        files = [
+            {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
+            for f in os.listdir(SAVE_DIR)
+            if f != "received_text.txt"
+        ]
+        files.sort(key=lambda x: x["mtime"], reverse=True)
+        return jsonify(files)
+    except Exception as e:
+        logger.error(f"Error listing files: {e}")
+        return jsonify({"error": "Failed to list files"}), 500
+
+
+@app.route("/rename_file", methods=["POST"])
+@login_required
+@limiter.limit("30 per minute")
+def rename_file():
+    """Rename a file with validation"""
+    old_name = request.form.get("old_name")
+    new_name = request.form.get("new_name")
+    
+    if not old_name or not new_name:
+        return "Missing filename", 400
+    
+    # Validate filenames for path traversal
+    old_name = os.path.basename(old_name)
+    new_name = os.path.basename(new_name)
+    
+    if '/' in new_name or '\\' in new_name:
+        return "Invalid filename", 400
+    
+    old_path = os.path.join(SAVE_DIR, old_name)
+    new_path = os.path.join(SAVE_DIR, new_name)
+    
+    try:
+        if not os.path.exists(old_path):
+            return "File not found", 404
+        
+        if os.path.exists(new_path):
+            return "File with new name already exists", 409
+        
+        os.rename(old_path, new_path)
+        logger.info(f"File renamed: {old_name} -> {new_name}")
+        return "File renamed successfully", 200
+    except Exception as e:
+        logger.error(f"Error renaming file: {e}")
+        return "Failed to rename file", 500
+
+
 @app.route("/upload_file", methods=["POST"])
 @login_required
+@limiter.limit("20 per minute")
 def upload_file():
+    """Upload file through web interface"""
     if "file" not in request.files:
         return "No file part", 400
 
@@ -151,43 +255,59 @@ def upload_file():
     if file.filename == "":
         return "No selected file", 400
 
-    file_path = os.path.join(SAVE_DIR, file.filename)
-    file.save(file_path)
-    print("File uploaded:", file.filename)
+    try:
+        # Sanitize filename
+        safe_filename = os.path.basename(file.filename)
+        file_path = os.path.join(SAVE_DIR, safe_filename)
+        
+        # Save file
+        file.save(file_path)
+        logger.info(f"File uploaded via web: {safe_filename}")
 
-    # Keep only the 10 most recent files
-    files = [
-        {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
-        for f in os.listdir(SAVE_DIR)
-        if f != "received_text.txt"
-    ]
-    files.sort(key=lambda x: x["mtime"], reverse=True)
-    if len(files) > 10:
-        for file in files[10:]:
-            os.remove(os.path.join(SAVE_DIR, file["name"]))
-
-    return "File uploaded", 200
+        # Cleanup old files - keep only 10 most recent
+        cleanup_old_files()
+        
+        return "File uploaded successfully", 200
+    except Exception as e:
+        logger.error(f"Error uploading file: {e}")
+        return "Failed to upload file", 500
 
 
-# Receive Text or Files
+def cleanup_old_files():
+    """Keep only the 10 most recent files"""
+    try:
+        files = [
+            {"name": f, "mtime": os.path.getmtime(os.path.join(SAVE_DIR, f))}
+            for f in os.listdir(SAVE_DIR)
+            if f != "received_text.txt"
+        ]
+        files.sort(key=lambda x: x["mtime"], reverse=True)
+        
+        if len(files) > 10:
+            for file in files[10:]:
+                file_path = os.path.join(SAVE_DIR, file["name"])
+                os.remove(file_path)
+                logger.info(f"Removed old file: {file['name']}")
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
+
+
 @app.route("/receive", methods=["POST"])
+@csrf.exempt  # Exempt for external API calls - uses custom auth
+@limiter.limit("30 per minute")
 def receive_file():
+    """Receive files or text from external sources (iOS Shortcuts, etc.)"""
     username = request.headers.get("Username")
     password = request.headers.get("Password")
     filename = request.headers.get("X-File-Name")
     file_ext = request.headers.get("X-File-Extension", "")
     content_type = request.content_type
 
-    print("=== Received Request ===")
-    print(f"Content-Type: {content_type}")
-    print(f"Headers: {dict(request.headers)}")
-    print(f"Form Data: {request.form}")
-    print(f"Files: {request.files}")
-    print(f"Data Length: {request.content_length}")
-    print("======================")
+    logger.info(f"Receive request - Content-Type: {content_type}, Filename: {filename}")
 
-    if username != USERNAME or password != PASSWORD:
-        print("Authentication failed")
+    # Authentication
+    if not check_credentials(username or "", password or ""):
+        logger.warning("Authentication failed for /receive endpoint")
         return "Invalid credentials", 401
 
     try:
@@ -195,25 +315,24 @@ def receive_file():
         if request.files:
             for key, file in request.files.items():
                 if file.filename:
-                    print(f"Processing multipart file: {file.filename}")
+                    logger.info(f"Processing multipart file: {file.filename}")
                     safe_filename = os.path.basename(file.filename)
                     file_path = os.path.join(SAVE_DIR, safe_filename)
                     file.save(file_path)
-                    print(f"Saved file to: {file_path}")
-                    return "File received", 200
+                    logger.info(f"Saved file: {safe_filename}")
+                    cleanup_old_files()
+                    return "File received successfully", 200
 
         # Handle raw file upload
-        if filename and request.content_length > 0:
-            print(f"Processing raw file: {filename}")
+        if filename and request.content_length and request.content_length > 0:
+            logger.info(f"Processing raw file: {filename}")
             safe_filename = os.path.basename(filename)
 
             # Determine file extension
             if file_ext:
-                # Use provided extension
                 if not safe_filename.lower().endswith(f".{file_ext.lower()}"):
                     safe_filename = f"{safe_filename}.{file_ext}"
             elif content_type and content_type != "application/octet-stream":
-                # Try to get extension from content type
                 ext = mimetypes.guess_extension(content_type)
                 if ext and not safe_filename.lower().endswith(ext.lower()):
                     safe_filename = f"{safe_filename}{ext}"
@@ -221,39 +340,78 @@ def receive_file():
             file_path = os.path.join(SAVE_DIR, safe_filename)
             with open(file_path, "wb") as f:
                 f.write(request.get_data())
-            print(f"Saved raw file to: {file_path}")
-            return "File received", 200
+            logger.info(f"Saved raw file: {safe_filename}")
+            cleanup_old_files()
+            return "File received successfully", 200
 
         # Handle text content
-        if request.form.get("text"):
-            content = request.form.get("text")
-            print(f"Processing text: {content}")
+        text_content = request.form.get("text")
+        if text_content:
+            logger.info("Processing text content")
             text_path = os.path.join(SAVE_DIR, "received_text.txt")
 
-            # Read existing lines or create empty list
+            # Read existing lines
             lines = []
             if os.path.exists(text_path):
-                with open(text_path, "r") as f:
+                with open(text_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
 
             # Add new content as first line
-            lines.insert(0, content + "\n")
+            lines.insert(0, text_content + "\n")
 
             # Keep only 10 most recent lines
             lines = lines[:10]
 
             # Write back to file
-            with open(text_path, "w") as f:
+            with open(text_path, "w", encoding="utf-8") as f:
                 f.writelines(lines)
 
-            return "Text received", 200
+            logger.info("Text content saved")
+            return "Text received successfully", 200
 
+        logger.warning("No content received in request")
         return "No content received", 400
 
     except Exception as e:
-        print(f"Error processing request: {e}")
+        logger.error(f"Error processing receive request: {e}", exc_info=True)
         return f"Error: {str(e)}", 500
 
 
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors"""
+    return jsonify({"error": "Not found"}), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    logger.error(f"Internal server error: {error}")
+    return jsonify({"error": "Internal server error"}), 500
+
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Handle rate limit exceeded"""
+    return jsonify({"error": "Rate limit exceeded"}), 429
+
+
+# Database initialization
+def init_db():
+    """Initialize database tables"""
+    with app.app_context():
+        db.create_all()
+        logger.info("Database initialized")
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    # Initialize database
+    init_db()
+    
+    # Get host and port from config or environment
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', 5000))
+    
+    logger.info(f"Starting SkyDrop server on {host}:{port}")
+    app.run(host=host, port=port, debug=app.config.get('DEBUG', False))

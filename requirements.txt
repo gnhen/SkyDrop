@@ -1,0 +1,22 @@
+# Core Framework
+Flask==3.0.3
+Flask-Login==0.6.3
+
+# Security
+Flask-WTF==1.2.1
+Flask-Limiter==3.5.0
+
+# Database
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+
+# Configuration
+python-dotenv==1.0.1
+
+# Utilities
+Werkzeug==3.0.3
+
+# Development Dependencies (uncomment for dev)
+# pytest==8.0.0
+# pytest-flask==1.3.0
+# pytest-cov==4.1.0

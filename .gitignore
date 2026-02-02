@@ -1,7 +1,48 @@
-received_files
+# Environment variables (allow default .env, ignore local overrides)
+.env.local
+.env.production
+.env.*.local
+key.txt
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+migrations/
+
+# Uploaded files
+received_files/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
 desktop.ini
-
 folderico-pink.ico
 
-key.txt
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

@@ -186,3 +186,70 @@ li button:hover {
     font-size: 14px;
     color: #667;
 }
+
+/* Error message styling */
+.error-message {
+    background-color: #fee;
+    color: #c33;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #fcc;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+/* Success message styling */
+.success-message {
+    background-color: #efe;
+    color: #3c3;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #cfc;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+/* Accessibility improvements */
+.line[role="button"] {
+    outline: none;
+}
+
+.line[role="button"]:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+button:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Loading state */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+        padding: 15px;
+    }
+    
+    .buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    button {
+        margin: 0;
+        width: 100%;
+    }
+    
+    .popup-content {
+        width: 95%;
+        padding: 15px;
+    }
+}
