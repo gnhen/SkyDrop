@@ -34,7 +34,9 @@ class Config:
     # Security
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None
-    SESSION_COOKIE_SECURE = os.getenv('FLASK_ENV') == 'production'
+    # Disable secure cookies for now since most deployments are HTTP behind reverse proxy
+    # Enable this only if you have proper HTTPS setup
+    SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
 
