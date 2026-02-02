@@ -45,6 +45,12 @@ limiter = Limiter(
     storage_uri=app.config['RATELIMIT_STORAGE_URL']
 )
 
+# Make CSRF token available in templates
+@app.context_processor
+def inject_csrf_token():
+    from flask_wtf.csrf import generate_csrf
+    return dict(csrf_token=generate_csrf)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
