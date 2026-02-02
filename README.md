@@ -37,7 +37,7 @@ docker-compose up -d
 
 # Default login: admin / admin
 
-# Change credentials immediately for production!
+# Change credentials immediately for production
 # Edit .env file, then restart:
 docker-compose restart
 
@@ -75,41 +75,4 @@ python receiver.py
 
 # 📋 Setup Guide
 
-## 1. Server Setup
-
-### Prerequisites
-- Python 3.11+ OR Docker
-- Server
-- Static IP or domain name
-
-### Configuration
-
-1. **For testing/development:** Just use the defaults
-   - The included `.env` file has working defaults
-   - Login with `admin` / `admin`
-
-2. **For production deployment:**
-   ```bash
-   # Option A: Edit .env directly
-   nano .env
-   
-   # Option B: Create local override (recommended)
-   cp .env .env.local
-   nano .env.local
-   ```
-
-3. **Generate secure credentials:**
-   ```bash
-   # Generate secret key
-   python -c "import secrets; print(secrets.token_hex(32))"
-   
-   # Generate secure password
-   python -c "import secrets; print(secrets.token_urlsafe(16))"
-   ```
-
-4. **Update your values:**
-   ```env
-   SECRET_KEY=<secret-key>
-   ADMIN_USERNAME=<user>
-   ADMIN_PASSWORD=<password>
-   ```
+## Visit the [SETUP.md](https://github.com/gnhen/SkyDrop/) for detailed instructions
