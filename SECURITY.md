@@ -1,14 +1,8 @@
 # Security Policy
 
-## Supported Versions
-
-| Version | Supported          |
-| ------- | ------------------ |
-| Latest  | :white_check_mark: |
-
 ## Default Credentials Warning
 
-⚠️ **CRITICAL**: This repository includes a `.env` file with default credentials (`admin`/`admin`) for easy testing and development.
+This repository includes a `.env` file with default credentials (`admin`/`admin`) for easy testing and development.
 
 **YOU MUST CHANGE THESE BEFORE PRODUCTION USE!**
 
@@ -81,13 +75,13 @@ docker-compose up -d
 
 SkyDrop includes the following security measures:
 
-- ✅ CSRF protection on all forms
-- ✅ XSS prevention with proper HTML escaping
-- ✅ Rate limiting (10 login attempts/min, 20 uploads/min)
-- ✅ Path traversal prevention
-- ✅ Input validation and sanitization
-- ✅ Secure session management
-- ✅ HTTP security headers
+- CSRF protection on all forms
+- XSS prevention with proper HTML escaping
+- Rate limiting (10 login attempts/min, 20 uploads/min)
+- Path traversal prevention
+- Input validation and sanitization
+- Secure session management
+- HTTP security headers
 
 ## Rate Limits
 
@@ -112,15 +106,12 @@ Configure in `config.py` if needed.
 
 If you discover a security vulnerability:
 
-1. **DO NOT** open a public issue
-2. Email the maintainer directly (check repository for contact)
+1. Open an issue
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
    - Potential impact
    - Suggested fix (if any)
-
-We'll respond within 48 hours and work on a fix.
 
 ## Best Practices
 
@@ -131,7 +122,7 @@ We'll respond within 48 hours and work on a fix.
 - Regular backups
 
 ### For Internet-Facing Deployments
-- **Use CloudFlare Tunnel** (recommended - provides free HTTPS)
+- Use CloudFlare Tunnel
 - OR use nginx with Let's Encrypt SSL
 - Enable all security headers
 - Use strong, unique passwords
@@ -145,12 +136,3 @@ We'll respond within 48 hours and work on a fix.
 - Keep base images updated
 - Use Docker Bench for security scanning
 
-## Additional Resources
-
-- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Flask Security Best Practices](https://flask.palletsprojects.com/en/latest/security/)
-- [Docker Security](https://docs.docker.com/engine/security/)
-
----
-
-**Remember**: Security is a process, not a product. Stay vigilant and keep your deployment updated!
