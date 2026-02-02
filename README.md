@@ -33,7 +33,7 @@ It receives text and files via HTTP requests and displays them on a web interfac
 ```bash
 git clone https://github.com/gnhen/SkyDrop
 cd SkyDrop
-docker-compose up -d
+docker compose up -d
 
 # Default login: admin / admin
 
