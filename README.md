@@ -39,10 +39,10 @@ docker compose up -d
 
 # Change credentials immediately for production
 # Edit .env file, then restart:
-docker-compose restart
+docker compose restart
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 Access at `http://localhost:5000`
